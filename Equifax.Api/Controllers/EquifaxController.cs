@@ -48,11 +48,13 @@ namespace Equifax.Api.Controllers
 
             try
             {
+                // Checking Existing Request in DB
                 var requestData = await _requestRepository.CheckRequestQueue(requestDto);
 
 
                 if (requestData.data == null)
                 {
+                    // Generating New Request in DB
                     var generatedRequest = await _requestRepository.InsertRequest(requestDto);
                 }
                 else
@@ -85,11 +87,17 @@ namespace Equifax.Api.Controllers
                     //}
                 }
 
-                string scrappingUrl = _configuration["ScrappingURL"];
+                var scrappingUrl = _configuration.GetValue<string>("ScrappingURL") ?? "https://my.equifax.com";
 
                 var loginCredentials = _mapper.Map<LoginCredentialRequestDto>(requestDto);
 
-                BrowserUtility.OpenBrowserAndNavigate(scrappingUrl, loginCredentials);
+                // Log before performing browser automation
+                _logger.LogInformation("Starting browser automation for URL: {scrappingUrl}", scrappingUrl);
+
+
+                // Login Request Sent to Chrome Driver.
+                var browserUtility = new BrowserUtility(_configuration);
+                var result = browserUtility.BrowserAutomationProcess(scrappingUrl, loginCredentials);
 
 
                 return Ok(requestData);
