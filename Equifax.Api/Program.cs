@@ -1,7 +1,9 @@
 using Equifax.Api.Data;
+using Equifax.Api.Helper;
 using Equifax.Api.Interfaces;
 using Equifax.Api.Mappings;
 using Equifax.Api.Repositories;
+using Equifax.Api.Utilities;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -11,12 +13,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
-    .WriteTo.File( path: "Equifax-Logs/App-log.txt", outputTemplate: "---------- {Timestamp:yyyy-MM-dd HH:mm:ss} ----------{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}", rollingInterval: RollingInterval.Day
+    .WriteTo.File( path: "Logs/App-log.txt", outputTemplate: "---------- {Timestamp:yyyy-MM-dd HH:mm:ss} ----------{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}", rollingInterval: RollingInterval.Day
         )
     .CreateLogger();
 
-
-//builder.Logging.AddSerilog();
+builder.Logging.AddSerilog();
 
 builder.Services.AddControllers();
 
@@ -29,6 +30,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 
 builder.Services.AddScoped<IRequestRepository, RequestRepository>();
+builder.Services.AddScoped<DriverSetupManager>();
+builder.Services.AddScoped<ElementLoader>();
+builder.Services.AddScoped<BlocksLoader>();
+builder.Services.AddScoped<BrowserUtility>();
 
 
 builder.Services.AddEndpointsApiExplorer();

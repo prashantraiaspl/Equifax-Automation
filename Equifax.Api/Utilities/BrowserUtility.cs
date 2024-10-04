@@ -1,138 +1,53 @@
-﻿using OpenQA.Selenium.Chrome;
-using OpenQA.Selenium;
+﻿using OpenQA.Selenium;
 using Equifax.Api.Domain.DTOs;
-using WebDriverManager.DriverConfigs.Impl;
-using WebDriverManager.Helpers;
-using WebDriverManager;
-using OpenQA.Selenium.Support.UI;
+using Equifax.Api.Helper;
 
 namespace Equifax.Api.Utilities
 {
     public class BrowserUtility
     {
-        private readonly IConfiguration _configuration;
+        private readonly DriverSetupManager _driverSetupManager;
+        private readonly ElementLoader _elementLoader;
+        private readonly BlocksLoader _blockLoader;
 
-        public BrowserUtility(IConfiguration configuration)
+        public BrowserUtility(DriverSetupManager driverSetupManager, ElementLoader elementLoader ,BlocksLoader blocksLoader)
         {
-            _configuration = configuration;
+            _driverSetupManager = driverSetupManager;
+            _elementLoader = elementLoader;
+            _blockLoader = blocksLoader;
         }
 
 
-        public IWebDriver InitializeDriver()
-        {
-            string extensionPath = @"D:\Prashant\Equifax API\Equifax.Api\CRX File\GCKNHKKOOLAABFMLNJONOGAAIFNJLFNP_8_9_0_0.crx";
 
-            if (!System.IO.File.Exists(extensionPath))
-            {
-                throw new System.IO.FileNotFoundException("No extension found at the specified path", extensionPath);
-            }
-
-            // Initialize Chrome options
-            var chromeOptions = new ChromeOptions();
-
-            // Add the FoxyProxy extension to Chrome
-            chromeOptions.AddExtensions(extensionPath);
-
-            // Proxy settings
-            string proxyUrl = "162.219.27.154";
-            string proxyPort = "6025";
-            string proxyUsername = "e8r5x";
-            string proxyPassword = "8svwlybs";
-
-            var proxy = new Proxy
-            {
-                HttpProxy = $"{proxyUsername}:{proxyPassword}@{proxyUrl}:{proxyPort}",
-                SslProxy = $"{proxyUsername}:{proxyPassword}@{proxyUrl}:{proxyPort}",
-            };
-
-            // Assign proxy to ChromeOptions
-            chromeOptions.Proxy = proxy;
-
-            IWebDriver driver = new ChromeDriver(chromeOptions);
-            driver.Manage().Window.Maximize();
-
-            WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(1));
-
-            // Navigate to the Chrome extension settings page to set the proxy via UI
-            driver.Navigate().GoToUrl("chrome-extension://gcknhkkoolaabfmlnjonogaaifnjlfnp/content/options.html");
-
-
-            try
-            {
-                // Wait for the "Proxies" label to be visible and click it
-                var proxiesLabel = wait.Until(d => d.FindElement(By.XPath("//label[@for='nav4']")));
-                proxiesLabel.Click();
-
-                // Wait for the "Add" button to be visible and click it
-                var addButton = wait.Until(d => d.FindElement(By.XPath("//button[contains(text(),'Add')]")));
-                addButton.Click();
-
-                // Now fill in the proxy details
-                driver.FindElement(By.XPath("//input[@data-id='hostname']")).SendKeys("162.219.27.154");
-                driver.FindElement(By.XPath("//input[@data-id='port']")).SendKeys("6025");
-                driver.FindElement(By.XPath("//input[@data-id='username']")).SendKeys("e8r5x");
-                driver.FindElement(By.XPath("//input[@data-id='password']")).SendKeys("8svwlybs");
-
-                // Submit Button
-                var saveButton = driver.FindElement(By.XPath("/html/body/article/section[4]/fieldset/button"));
-                saveButton.Click();
-
-
-                // After clicking save, open a new tab
-                driver.FindElement(By.TagName("body")).SendKeys(Keys.Control + "t");
-                driver.Navigate().GoToUrl("chrome-extension://gcknhkkoolaabfmlnjonogaaifnjlfnp/content/popup.html");
-
-                Console.WriteLine(driver.Title);
-
-                // Wait for the specific link in the popup and click it
-                var popupLink = wait.Until(d => d.FindElement(By.XPath("/html/body/article/section/div[1]/label[3]/span[2]")));
-                popupLink.Click();
-
-                // Switch back to the original tab if needed (optional)
-                List<string> tabs = new List<string>(driver.WindowHandles);
-                driver.SwitchTo().Window(tabs[0]);
-
-            }
-            catch (NoSuchElementException ex)
-            {
-                Console.WriteLine($"Element not found: {ex.Message}");
-            }
-            catch (WebDriverTimeoutException ex)
-            {
-                Console.WriteLine($"Timeout waiting for element: {ex.Message}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred: {ex.Message}");
-            }
-
-
-
-            return driver;
-        }
-
-        public ResponseBody BrowserAutomationProcess(string url, LoginCredentialRequestDto loginCredentials)
+        public async Task<ResponseBody> BrowserAutomationProcess(string url, LoginCredentialRequestDto loginCredentials, DisputeRequestDto disputeRequest)
         {
             var browserResponse = new ResponseBody();
 
-            IWebDriver? driver = null;
             try
             {
-                driver = InitializeDriver();
+                IWebDriver? driver = null;
+
+                driver = _driverSetupManager.InitializeDriver();
+
+                System.Threading.Thread.Sleep(3000);
 
                 // Step 1: Open URL
                 OpenBrowserAndNavigate(url, driver);
 
                 // Step 2: Perform Login
-                Login(driver, loginCredentials);
+                Login(loginCredentials, driver);
+
+                System.Threading.Thread.Sleep(5000);
 
                 // Step 3: Navigate to Dispute
                 NavigateToDispute(driver);
 
-                // Step 4: File a Dispute
-                FileDispute(driver);
+                System.Threading.Thread.Sleep(5000);
 
-                CloseBrowser(driver);
+                // Step 4: File a Dispute
+                await FileDisputeAsync(disputeRequest, driver);
+
+                //CloseBrowser(driver);
             }
             catch (Exception ex)
             {
@@ -155,7 +70,7 @@ namespace Equifax.Api.Utilities
             }
         }
 
-        public void Login(IWebDriver driver, LoginCredentialRequestDto requestData)
+        public void Login(LoginCredentialRequestDto request, IWebDriver driver)
         {
             try
             {
@@ -165,9 +80,10 @@ namespace Equifax.Api.Utilities
                 var submitButton = driver.FindElement(By.Id("login-button"));
 
                 // Enter email and password
-                emailInput.SendKeys(requestData.Email);
-                passwordInput.SendKeys(requestData.Password);
+                emailInput.SendKeys(request.user_name);
+                passwordInput.SendKeys(request.user_password);
                 submitButton.Click();
+
 
                 Console.WriteLine("Login successful.");
                 System.Threading.Thread.Sleep(3000);
@@ -182,10 +98,12 @@ namespace Equifax.Api.Utilities
         {
             try
             {
-                var disputeTab = driver.FindElement(By.Id("fullDisputeLink"));
-                disputeTab.Click();
+                string disputeTabXPath = "//*[@id='fullDisputeLink']";
+
+                _elementLoader.Load(disputeTabXPath, driver);
+
                 Console.WriteLine("Navigated to dispute tab.");
-                System.Threading.Thread.Sleep(2000);
+                System.Threading.Thread.Sleep(3000);
             }
             catch (Exception ex)
             {
@@ -193,25 +111,117 @@ namespace Equifax.Api.Utilities
             }
         }
 
-        public void FileDispute(IWebDriver driver)
+        public async Task FileDisputeAsync(DisputeRequestDto disputeRequest, IWebDriver driver)
         {
+            List<(IWebElement Element, int Index)> blockElementsWithIndex = new List<(IWebElement Element, int Index)>();
+
             try
             {
-                var disputeButton = driver.FindElement(By.Id("file-distupe-section-file-a-dispute-button"));
-                disputeButton.Click();
-                System.Threading.Thread.Sleep(2000);
+                string buttonXPath = "//*[@id=\"file-distupe-section-file-a-dispute-button\"]";
+                string checkboxXPath = "//*[@id=\"onlineDeliveryAccept\"]/label/span[1]";
+                string submitButtonXPath = "//*[@id=\"ssn-agree-modal-confirm-button\"]";
+                string creditAccountXPath = "//*[@id=\"creditAccounts-section-link\"]/i";
 
-                var checkbox = driver.FindElement(By.Id("onlineDeliveryAccept"));
-                if (!checkbox.Selected)
+
+                _elementLoader.Load(buttonXPath, driver);
+                System.Threading.Thread.Sleep(3000);
+
+                var element = driver.FindElement(By.XPath(checkboxXPath));
+                element.Click();
+                System.Threading.Thread.Sleep(3000);
+
+                _elementLoader.Load(submitButtonXPath, driver);
+                System.Threading.Thread.Sleep(5000);
+
+                _elementLoader.Load(creditAccountXPath, driver);
+                System.Threading.Thread.Sleep(3000);
+
+
+                // Block Loader
+                blockElementsWithIndex = await _blockLoader.Process(driver);
+
+
+                IWebElement? matchedBlock = null;
+                string viewDetailsButtonXPath = string.Empty;
+
+                blockElementsWithIndex = blockElementsWithIndex.Distinct().ToList();
+
+                foreach (var (block, index) in blockElementsWithIndex)
                 {
-                    checkbox.Click();
+                    try
+                    {
+                        // Find the Creditor Name
+                        var creditorNameElement = block.FindElement(By.XPath("//*[@id=\"account-card-name\"]"));
+                        string creditorNameText = creditorNameElement.GetAttribute("innerText");
+
+                        // Compare creditor name and open date
+                        if (creditorNameText.Equals(disputeRequest.equifax_data.account[0].creditor_name, StringComparison.OrdinalIgnoreCase))
+                        {
+                            viewDetailsButtonXPath = $"//*[@id=\"account-cards-list-installment-card-button-{index}\"]";
+                            System.Threading.Thread.Sleep(3000);
+                            _elementLoader.Load(viewDetailsButtonXPath, driver);
+
+                            IWebElement openDateElement = null;
+                            bool elementFound = false;
+
+                            for (int attempt = 0; attempt < 3 && !elementFound; attempt++)
+                            {
+                                try
+                                {
+                                    openDateElement = FindOpenDateElement(block);
+                                    elementFound = true;
+                                }
+                                catch (StaleElementReferenceException)
+                                {
+                                    Console.WriteLine($"Attempt {attempt + 1}: Stale Element Reference. Retrying...");
+                                }
+                            }
+
+                            // If element is found, retrieve the text
+                            if (elementFound)
+                            {
+                                // Use JavaScriptExecutor to get the hidden element's content
+                                IJavaScriptExecutor jsExecutor = (IJavaScriptExecutor)driver;
+                                string openDateText = (string)jsExecutor.ExecuteScript("return arguments[0].textContent;", openDateElement);
+
+                                // Compare open dates
+                                if (openDateText == disputeRequest.equifax_data.account[0].open_date)
+                                {
+                                    matchedBlock = block;
+                                    break; // Exit loop once a match is found
+                                }
+                            }
+                        }
+
+                        // Generate view details button XPath for the matched block index
+                        viewDetailsButtonXPath = $"//*[@id=\"account-cards-list-installment-card-button-{index}\"]";
+                    }
+                    catch (NoSuchElementException ex)
+                    {
+                        Console.WriteLine($"Element not found in block {index}: {ex.Message}");
+                    }
+
+                    Console.WriteLine($"Block Index: {index}, Block Element: {block}");
                 }
 
-                var submitButton = driver.FindElement(By.Id("ssn-agree-modal-confirm-button"));
-                submitButton.Click();
-                System.Threading.Thread.Sleep(2000);
 
-                Console.WriteLine("Dispute filed successfully.");
+                if (matchedBlock != null)
+                {
+                    // Click on the view details button in the matched block
+                    string FileADisputeButtonXPath = "//*[@id=\"credit-account-details-page-dispute-information-btn\"]";
+                    string disputeIssueOptionXPath = "//*[@id=\"dispute-radio-group-field\"]/div/efx-radio-group-field/fieldset/div[1]/div/div[2]/efx-radio-button/label";
+                    string continueXPath = "//*[@id=\"dispute-nav-buttons-continue-button\"]";
+
+                    System.Threading.Thread.Sleep(5000);
+                    _elementLoader.Load(viewDetailsButtonXPath, driver);
+                    _elementLoader.Load(FileADisputeButtonXPath, driver);
+                    _elementLoader.Load(disputeIssueOptionXPath, driver);
+                    _elementLoader.Load(continueXPath, driver);
+                }
+                else
+                {
+                    Console.WriteLine("No matching block found.");
+                }
             }
             catch (Exception ex)
             {
@@ -223,6 +233,12 @@ namespace Equifax.Api.Utilities
         {
             driver.Quit();
         }
+
+        private IWebElement FindOpenDateElement(IWebElement block)
+        {
+            return block.FindElement(By.XPath("//*[@id=\"credit-account-details-section-date-opened\"]"));
+        }
+
     }
 
 }

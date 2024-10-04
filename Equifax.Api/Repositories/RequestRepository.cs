@@ -12,23 +12,23 @@ namespace Equifax.Api.Repositories
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<RequestRepository> _logger;
-        private readonly DbSet<DisputeRequest> _dbSet;
+        private readonly DbSet<RequestMaster> _dbSet;
 
         public RequestRepository(ApplicationDbContext context, ILogger<RequestRepository> logger)
         {
             _context = context;
-            _dbSet = _context.Set<DisputeRequest>();
+            _dbSet = _context.Set<RequestMaster>();
             _logger = logger;
         }
 
 
-        public async Task<ResponseBody> CheckRequestQueue(PayloadRequestDto requestDto)
+        public async Task<ResponseBody> CheckRequestQueue(DisputeRequestDto requestDto)
         {
             var responseBody = new ResponseBody();
 
             try
             {
-                var query = _dbSet.Where(request => request.Email == requestDto.Email);
+                var query = _dbSet.Where(request => request.user_name == requestDto.user_name);
 
                 var result = await query.ToListAsync();
 
@@ -57,18 +57,18 @@ namespace Equifax.Api.Repositories
             return responseBody;
         }
 
-        public async Task<ResponseBody> InsertRequest(PayloadRequestDto requestDto)
+        public async Task<ResponseBody> InsertRequest(DisputeRequestDto requestDto)
         {
             var responseBody = new ResponseBody();
 
             try
             {
-                var newRequest = new DisputeRequest
+                var newRequest = new RequestMaster
                 {
-                    Email = requestDto.Email,
-                    Password = requestDto.Password,
-                    ClientId = requestDto.ClientId,
-                    RequestStatus = RequestStatus.InProgress
+                    user_name = requestDto.user_name,
+                    user_password = requestDto.user_password,
+                    client_id = requestDto.client_id,
+                    request_status = RequestStatus.InProgress
                 };
 
                 var result = await _dbSet.AddAsync(newRequest);

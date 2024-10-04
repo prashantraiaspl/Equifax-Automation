@@ -8,8 +8,7 @@ namespace Equifax.Api.Mappings
     {
         public MappingProfile()
         {
-            //            FROM TYPE    --->      TO TYPE
-            CreateMap<PayloadRequestDto, LoginCredentialRequestDto>();
+            CreateMap<DisputeRequestDto, LoginCredentialRequestDto>();
         }
     }
 }

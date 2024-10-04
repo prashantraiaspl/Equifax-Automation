@@ -4,7 +4,7 @@ namespace Equifax.Api.Interfaces
 {
     public interface IRequestRepository
     {
-        Task<ResponseBody> CheckRequestQueue(PayloadRequestDto requestDto);
-        Task<ResponseBody> InsertRequest(PayloadRequestDto requestDto);
+        Task<ResponseBody> CheckRequestQueue(DisputeRequestDto requestDto);
+        Task<ResponseBody> InsertRequest(DisputeRequestDto requestDto);
     }
 }

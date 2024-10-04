@@ -7,11 +7,11 @@ namespace Equifax.Api.Data
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
-        DbSet<DisputeRequest> DisputeRequests { get; set; }
+        DbSet<RequestMaster> RequestMaster { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<DisputeRequest>()
-                .Property(d => d.RequestStatus)
+            modelBuilder.Entity<RequestMaster>()
+                .Property(d => d.request_status)
                 .HasConversion<string>();
 
             base.OnModelCreating(modelBuilder);

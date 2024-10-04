@@ -1,12 +1,13 @@
 ﻿using AutoMapper;
 using Equifax.Api.Domain.DTOs;
+using Equifax.Api.Domain.Models;
 using Equifax.Api.Interfaces;
 using Equifax.Api.Utilities;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Equifax.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/[Controller]")]
     [ApiController]
     public class EquifaxController : ControllerBase
     {
@@ -14,23 +15,26 @@ namespace Equifax.Api.Controllers
         private readonly ILogger<EquifaxController> _logger;
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
+        private readonly BrowserUtility _browserUtility;
 
         public EquifaxController(
             IRequestRepository requestRepository,
             ILogger<EquifaxController> logger,
             IConfiguration configuration,
-            IMapper mapper
+            IMapper mapper,
+            BrowserUtility browserUtility
             )
         {
             _requestRepository = requestRepository;
             _logger = logger;
             _configuration = configuration;
             _mapper = mapper;
+            _browserUtility = browserUtility;
         }
 
 
         [HttpPost("Verify")]
-        public async Task<IActionResult> LoadEquifaxQueue([FromBody] PayloadRequestDto requestDto)
+        public async Task<IActionResult> LoadEquifaxQueue([FromBody] DisputeRequestDto requestDto)
         {
             if (!ModelState.IsValid)
             {
@@ -96,8 +100,7 @@ namespace Equifax.Api.Controllers
 
 
                 // Login Request Sent to Chrome Driver.
-                var browserUtility = new BrowserUtility(_configuration);
-                var result = browserUtility.BrowserAutomationProcess(scrappingUrl, loginCredentials);
+                await _browserUtility.BrowserAutomationProcess(scrappingUrl, loginCredentials, requestDto);
 
 
                 return Ok(requestData);
@@ -113,6 +116,5 @@ namespace Equifax.Api.Controllers
                 });
             }
         }
-
     }
 }
