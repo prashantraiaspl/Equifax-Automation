@@ -141,15 +141,17 @@ namespace Equifax.Api.Helper
             System.Threading.Thread.Sleep(5000);
 
             int blockCount = 0;
+
             try
             {
-                // Locate the element and extract the inner text
-                var blockElement = driver.FindElement(elementBy);
-                string blockText = blockElement.GetAttribute("innerText");
+                // Locate the Block Text
+                string blockText = driver.FindElement(elementBy).Text;
                 Console.WriteLine($"{blockType} Text: " + blockText);
 
                 // Use Regex to extract the number inside parentheses
                 var match = Regex.Match(blockText, @"\((\d+)\)");
+
+
                 if (match.Success)
                 {
                     if (int.TryParse(match.Groups[1].Value, out int parsedBlockCount))

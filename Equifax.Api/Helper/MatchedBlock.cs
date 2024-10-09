@@ -40,8 +40,7 @@ namespace Equifax.Api.Helper
 
 
                     // Find the Creditor Name
-                    var creditorNameElement = block.FindElement(By.XPath($".//*[@id=\"account-card-name\"]"));
-                    string creditorNameText = creditorNameElement.GetAttribute("innerText").Trim().ToLower();
+                    string creditorNameText = block.FindElement(By.XPath($".//*[@id=\"account-card-name\"]")).Text.Trim().ToLower();
 
                     // Compare the Creditor Name
                     if (creditorNameText.Equals(creditor_name.Trim().ToLower(), StringComparison.OrdinalIgnoreCase))

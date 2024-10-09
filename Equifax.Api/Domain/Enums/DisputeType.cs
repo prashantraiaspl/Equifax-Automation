@@ -2,8 +2,8 @@
 {
     public enum DisputeType
     {
-        accounts,
-        collections,
-        inquiries
+        accounts,       // = 0
+        collections,    // = 1
+        inquiries       // = 2
     }
 }

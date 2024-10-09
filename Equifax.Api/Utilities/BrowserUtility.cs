@@ -22,7 +22,7 @@ namespace Equifax.Api.Utilities
         {
             _driverSetupManager = driverSetupManager;
             _elementLoader = elementLoader;
-            _blockLoader = blocksLoader;
+            _blockLoader = blocksLoader;    
             _matchedBlock = matchedBlock;
             _checkboxLoader = checkboxLoader;
         }
