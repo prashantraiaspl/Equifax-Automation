@@ -9,12 +9,22 @@ namespace Equifax.Api.Utilities
         private readonly DriverSetupManager _driverSetupManager;
         private readonly ElementLoader _elementLoader;
         private readonly BlocksLoader _blockLoader;
+        private readonly MatchedBlock _matchedBlock;
+        private readonly CheckboxLoader _checkboxLoader;
 
-        public BrowserUtility(DriverSetupManager driverSetupManager, ElementLoader elementLoader ,BlocksLoader blocksLoader)
+        public BrowserUtility
+            (   DriverSetupManager driverSetupManager,
+                ElementLoader elementLoader,
+                BlocksLoader blocksLoader,
+                MatchedBlock matchedBlock,
+                CheckboxLoader checkboxLoader
+            )
         {
             _driverSetupManager = driverSetupManager;
             _elementLoader = elementLoader;
             _blockLoader = blocksLoader;
+            _matchedBlock = matchedBlock;
+            _checkboxLoader = checkboxLoader;
         }
 
 
@@ -47,6 +57,7 @@ namespace Equifax.Api.Utilities
                 // Step 4: File a Dispute
                 await FileDisputeAsync(disputeRequest, driver);
 
+                // Step 5: Close the Browser
                 //CloseBrowser(driver);
             }
             catch (Exception ex)
@@ -87,6 +98,33 @@ namespace Equifax.Api.Utilities
 
                 Console.WriteLine("Login successful.");
                 System.Threading.Thread.Sleep(3000);
+
+                // Check if the subscription page is shown (span with price $19.95)
+                try
+                {
+                    var declineButton = driver.FindElement(By.XPath("//*[@id=\"no\"]"));
+
+                    if (declineButton != null)
+                    {
+                        declineButton.Click();
+
+                        Console.WriteLine("Subscription prompt bypassed.");
+                        System.Threading.Thread.Sleep(3000);
+
+                        // After clicking, navigate to the dashboard
+                        driver.Navigate().GoToUrl("https://my.equifax.com/membercenter/#/dashboard");
+                        Console.WriteLine("Navigated to dashboard.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("No subscription prompt detected.");
+                    }
+                }
+                catch (NoSuchElementException)
+                {
+                    // The subscription span was not found, meaning no subscription prompt was shown
+                    Console.WriteLine("No subscription page detected, continuing...");
+                }
             }
             catch (Exception ex)
             {
@@ -113,10 +151,37 @@ namespace Equifax.Api.Utilities
 
         public async Task FileDisputeAsync(DisputeRequestDto disputeRequest, IWebDriver driver)
         {
-            List<(IWebElement Element, int Index)> blockElementsWithIndex = new List<(IWebElement Element, int Index)>();
+            List<(IWebElement Element, int Index, string Type)> blockElementsWithIndex = new List<(IWebElement Element, int Index, string Type)>();
 
             try
             {
+                string creditor_name = string.Empty;
+                string open_date = string.Empty;
+                List<string> reasonArr = new List<string>();
+                string comment = string.Empty;
+                string confirmation_number = string.Empty;
+
+
+                foreach (var account in disputeRequest.equifax_data.account)
+                {
+                    if (account.creditor_name != null)
+                    {
+                        creditor_name = account.creditor_name;
+                    }
+                    if (account.open_date != null)
+                    {
+                        open_date = account.open_date;
+                    }
+                    if (account.reason != null && account.reason.Count > 0)
+                    {
+                        reasonArr.AddRange(account.reason);
+                    }
+                    if (account.comment != null)
+                    {
+                        comment = account.comment;
+                    }
+                }
+
                 string buttonXPath = "//*[@id=\"file-distupe-section-file-a-dispute-button\"]";
                 string checkboxXPath = "//*[@id=\"onlineDeliveryAccept\"]/label/span[1]";
                 string submitButtonXPath = "//*[@id=\"ssn-agree-modal-confirm-button\"]";
@@ -141,87 +206,50 @@ namespace Equifax.Api.Utilities
                 blockElementsWithIndex = await _blockLoader.Process(driver);
 
 
-                IWebElement? matchedBlock = null;
-                string viewDetailsButtonXPath = string.Empty;
+                IWebDriver driver_matchedBlock = await _matchedBlock.Matching(blockElementsWithIndex, creditor_name, open_date, driver);
 
-                blockElementsWithIndex = blockElementsWithIndex.Distinct().ToList();
-
-                foreach (var (block, index) in blockElementsWithIndex)
+                var checkBoxArr = new List<string>
                 {
-                    try
-                    {
-                        // Find the Creditor Name
-                        var creditorNameElement = block.FindElement(By.XPath("//*[@id=\"account-card-name\"]"));
-                        string creditorNameText = creditorNameElement.GetAttribute("innerText");
+                    "//*[@id=\"dispute-checkbox-group-field-007\"]", // For 'The status, payment history, or payment rating...'
+                    "//*[@id=\"dispute-checkbox-group-field-012\"]", // For 'I paid this account before it was closed...'
+                    "//*[@id=\"dispute-checkbox-group-field-013\"]", // For 'The balance or past due amount is not correct.'
+                    "//*[@id=\"dispute-checkbox-group-field-015\"]", // For 'The credit limit or high credit amount is inaccurate.'
+                    "//*[@id=\"dispute-checkbox-group-field-016\"]", // For 'The date of first delinquency is inaccurate.'
+                    "//*[@id=\"dispute-checkbox-group-field-024\"]", // For 'I closed this account.'
+                    "//*[@id=\"dispute-checkbox-group-field-028\"]", // For 'The comment from the lender/creditor is not correct.'
+                    "//*[@id=\"dispute-checkbox-group-field-037\"]"  // For 'This account is included in my bankruptcy.'
+                };
 
-                        // Compare creditor name and open date
-                        if (creditorNameText.Equals(disputeRequest.equifax_data.account[0].creditor_name, StringComparison.OrdinalIgnoreCase))
-                        {
-                            viewDetailsButtonXPath = $"//*[@id=\"account-cards-list-installment-card-button-{index}\"]";
-                            System.Threading.Thread.Sleep(3000);
-                            _elementLoader.Load(viewDetailsButtonXPath, driver);
 
-                            IWebElement openDateElement = null;
-                            bool elementFound = false;
-
-                            for (int attempt = 0; attempt < 3 && !elementFound; attempt++)
-                            {
-                                try
-                                {
-                                    openDateElement = FindOpenDateElement(block);
-                                    elementFound = true;
-                                }
-                                catch (StaleElementReferenceException)
-                                {
-                                    Console.WriteLine($"Attempt {attempt + 1}: Stale Element Reference. Retrying...");
-                                }
-                            }
-
-                            // If element is found, retrieve the text
-                            if (elementFound)
-                            {
-                                // Use JavaScriptExecutor to get the hidden element's content
-                                IJavaScriptExecutor jsExecutor = (IJavaScriptExecutor)driver;
-                                string openDateText = (string)jsExecutor.ExecuteScript("return arguments[0].textContent;", openDateElement);
-
-                                // Compare open dates
-                                if (openDateText == disputeRequest.equifax_data.account[0].open_date)
-                                {
-                                    matchedBlock = block;
-                                    break; // Exit loop once a match is found
-                                }
-                            }
-                        }
-
-                        // Generate view details button XPath for the matched block index
-                        viewDetailsButtonXPath = $"//*[@id=\"account-cards-list-installment-card-button-{index}\"]";
-                    }
-                    catch (NoSuchElementException ex)
-                    {
-                        Console.WriteLine($"Element not found in block {index}: {ex.Message}");
-                    }
-
-                    Console.WriteLine($"Block Index: {index}, Block Element: {block}");
+                foreach (var checkBoxXPath in checkBoxArr)
+                {
+                    _checkboxLoader.CheckboxHandelling(checkBoxXPath, driver_matchedBlock, reasonArr);
                 }
 
+                string commentXPath = "//*[@id=\"creditAccountInfoComment\"]";
+                string saveBtnXPath = "//*[@id=\"dispute-comment-save-button-2\"]";
+                string continueBtnXPath = "//*[@id=\"dispute-nav-buttons-continue-button\"]";
+                string skipUploadXPath = "//*[@id=\"dispute-nav-buttons-skip-button\"]";
+                string submitDisputeXPath = "//*[@id=\"dispute-review-finish-and-upload-button\"]";
+                string confirmationNumberXPath = "//*[@id=\"dispute-confirmation-cards-list-confirmation-number\"]";
 
-                if (matchedBlock != null)
-                {
-                    // Click on the view details button in the matched block
-                    string FileADisputeButtonXPath = "//*[@id=\"credit-account-details-page-dispute-information-btn\"]";
-                    string disputeIssueOptionXPath = "//*[@id=\"dispute-radio-group-field\"]/div/efx-radio-group-field/fieldset/div[1]/div/div[2]/efx-radio-button/label";
-                    string continueXPath = "//*[@id=\"dispute-nav-buttons-continue-button\"]";
+                System.Threading.Thread.Sleep(3000);
+                IWebElement commentElement = driver.FindElement(By.XPath(commentXPath));
+                commentElement.Clear();
+                commentElement.SendKeys(comment);
 
-                    System.Threading.Thread.Sleep(5000);
-                    _elementLoader.Load(viewDetailsButtonXPath, driver);
-                    _elementLoader.Load(FileADisputeButtonXPath, driver);
-                    _elementLoader.Load(disputeIssueOptionXPath, driver);
-                    _elementLoader.Load(continueXPath, driver);
-                }
-                else
-                {
-                    Console.WriteLine("No matching block found.");
-                }
+                _elementLoader.Load(saveBtnXPath, driver);
+                _elementLoader.Load(continueBtnXPath, driver);
+                _elementLoader.Load(skipUploadXPath, driver);
+                //_elementLoader.Load(submitDisputeXPath, driver);
+
+                System.Threading.Thread.Sleep(5000);
+                string confirmation_number_text = driver.FindElement(By.XPath(confirmationNumberXPath)).Text;
+
+                // Storing Confirmation Number
+                System.Threading.Thread.Sleep(3000);
+                confirmation_number = confirmation_number_text;
+                Console.WriteLine($"confirmation_number: {confirmation_number}");
             }
             catch (Exception ex)
             {
@@ -233,12 +261,6 @@ namespace Equifax.Api.Utilities
         {
             driver.Quit();
         }
-
-        private IWebElement FindOpenDateElement(IWebElement block)
-        {
-            return block.FindElement(By.XPath("//*[@id=\"credit-account-details-section-date-opened\"]"));
-        }
-
     }
 
 }

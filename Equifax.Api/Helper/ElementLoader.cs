@@ -1,5 +1,4 @@
-﻿using AngleSharp.Dom;
-using OpenQA.Selenium;
+﻿using OpenQA.Selenium;
 
 namespace Equifax.Api.Helper
 {
@@ -14,6 +13,7 @@ namespace Equifax.Api.Helper
                 if (elements.Count > 0)
                 {
                     elements[0].Click();
+                    Console.WriteLine("------ELement is Clicked (if).------");
                 }
                 else
                 {
@@ -21,6 +21,7 @@ namespace Equifax.Api.Helper
                     var element = driver.FindElement(By.XPath(xPath));
                     System.Threading.Thread.Sleep(10000);
                     element.Click();
+                    Console.WriteLine("------ELement is Clicked (else).------");
                 }
             }
 			catch (Exception ex)

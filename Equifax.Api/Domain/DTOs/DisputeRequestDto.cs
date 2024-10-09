@@ -1,6 +1,4 @@
-﻿using Equifax.Api.Domain.Enums;
-
-namespace Equifax.Api.Domain.DTOs
+﻿namespace Equifax.Api.Domain.DTOs
 {
     public class DisputeRequestDto
     {
@@ -27,8 +25,9 @@ namespace Equifax.Api.Domain.DTOs
         public string open_date { get; set; }
         public string creditor { get; set; }
         public string ownership { get; set; }
-        public List<string> accuracy { get; set; }
+        public List<string> reason { get; set; }
         public string comment { get; set; }
+        public string? confirmation_number { get; set; }
     }
 
     public class CollectionDto

@@ -5,9 +5,9 @@ namespace Equifax.Api.Helper
 {
     public class BlocksLoader
     {
-        public async Task<List<(IWebElement, int Index)>> Process(IWebDriver driver)
+        public async Task<List<(IWebElement, int Index, string Type)>> Process(IWebDriver driver)
         {
-            List<(IWebElement Element, int Index)> blockElementsWithIndex = new List<(IWebElement Element, int Index)>();
+            List<(IWebElement Element, int Index, string Type)> blockElementsWithIndex = new List<(IWebElement Element, int Index, string Type)>();
 
             try
             {
@@ -37,7 +37,7 @@ namespace Equifax.Api.Helper
                                 var blockElement = driver.FindElement(By.Id(dynamicId));
                                 if (blockElement != null)
                                 {
-                                    blockElementsWithIndex.Add((blockElement, i));
+                                    blockElementsWithIndex.Add((blockElement, i, "revolving"));
                                     Console.WriteLine($"Added Revolving Block {i}");
                                 }
                             }
@@ -60,7 +60,7 @@ namespace Equifax.Api.Helper
                                 var blockElement = driver.FindElement(By.Id(dynamicId));
                                 if (blockElement != null)
                                 {
-                                    blockElementsWithIndex.Add((blockElement, i));
+                                    blockElementsWithIndex.Add((blockElement, i, "install"));
                                     Console.WriteLine($"Added Installment Block {i}");
                                 }
                             }
@@ -83,7 +83,7 @@ namespace Equifax.Api.Helper
                                 var blockElement = driver.FindElement(By.Id(dynamicId));
                                 if (blockElement != null)
                                 {
-                                    blockElementsWithIndex.Add((blockElement, i));
+                                    blockElementsWithIndex.Add((blockElement, i, "mortgage"));
                                     Console.WriteLine($"Added Mortgage Block {i}");
                                 }
                             }
@@ -106,7 +106,7 @@ namespace Equifax.Api.Helper
                                 var blockElement = driver.FindElement(By.Id(dynamicId));
                                 if (blockElement != null)
                                 {
-                                    blockElementsWithIndex.Add((blockElement, i));
+                                    blockElementsWithIndex.Add((blockElement, i, "other"));
                                     Console.WriteLine($"Added Other Block {i}");
                                 }
                             }
@@ -121,7 +121,7 @@ namespace Equifax.Api.Helper
                     // If all block types are checked, break the loop early
                     if (isRevolvingChecked && isInstallmentChecked && isMortgageChecked && isOtherChecked)
                     {
-                        Console.WriteLine("All block types have been processed. Exiting loop.");
+                        Console.WriteLine("----------------All block types have been processed. Exiting loop.------------------");
                         break;
                     }
                 }

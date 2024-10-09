@@ -103,7 +103,7 @@ namespace Equifax.Api.Controllers
                 await _browserUtility.BrowserAutomationProcess(scrappingUrl, loginCredentials, requestDto);
 
 
-                return Ok(requestData);
+                return Ok(requestDto);
             }
             catch (Exception ex)
             {

@@ -31,6 +31,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddScoped<IRequestRepository, RequestRepository>();
 builder.Services.AddScoped<DriverSetupManager>();
+builder.Services.AddScoped<CheckboxLoader>();
+builder.Services.AddScoped<MatchedBlock>();
 builder.Services.AddScoped<ElementLoader>();
 builder.Services.AddScoped<BlocksLoader>();
 builder.Services.AddScoped<BrowserUtility>();

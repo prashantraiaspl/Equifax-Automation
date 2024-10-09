@@ -48,6 +48,7 @@ namespace Equifax.Api.Utilities
             driver.Navigate().GoToUrl("chrome-extension://gcknhkkoolaabfmlnjonogaaifnjlfnp/content/options.html");
 
 
+            //--------------------------------FOXY PROXY CODE-----------------------------------//
             try
             {
                 // Wait for the "Proxies" label to be visible and click it
