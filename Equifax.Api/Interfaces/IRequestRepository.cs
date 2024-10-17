@@ -1,4 +1,5 @@
 ﻿using Equifax.Api.Domain.DTOs;
+using Equifax.Api.Domain.Models;
 
 namespace Equifax.Api.Interfaces
 {
@@ -6,5 +7,6 @@ namespace Equifax.Api.Interfaces
     {
         Task<ResponseBody> CheckRequestQueue(DisputeRequestDto requestDto);
         Task<ResponseBody> InsertRequest(DisputeRequestDto requestDto);
+        Task<ResponseBody> UpdateRequest(RequestMaster response);
     }
 }

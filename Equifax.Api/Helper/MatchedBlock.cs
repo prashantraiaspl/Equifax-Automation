@@ -62,6 +62,8 @@ namespace Equifax.Api.Helper
                         {
                             viewDetailsButtonXPath = mortgageviewDetailsButtonXPath;
                         }
+
+                        // Here type == other
                         else
                         {
                             viewDetailsButtonXPath = otherviewDetailsButtonXPath;

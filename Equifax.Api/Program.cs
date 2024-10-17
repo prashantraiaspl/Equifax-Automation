@@ -28,7 +28,7 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-
+// Registering the Utility & Helper Classes.
 builder.Services.AddScoped<IRequestRepository, RequestRepository>();
 builder.Services.AddScoped<DriverSetupManager>();
 builder.Services.AddScoped<CheckboxLoader>();

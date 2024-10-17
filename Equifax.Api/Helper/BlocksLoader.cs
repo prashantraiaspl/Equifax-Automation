@@ -12,7 +12,7 @@ namespace Equifax.Api.Helper
             try
             {
                 // Extract the number of Total Open Accounts blocks
-                int totalBlocks = ExtractBlockCount(driver, By.Id("credit-accounts-page-filter-option-openAccounts"), "Total Open Accounts");
+                int totalBlocks = ExtractBlockCount(driver, By.XPath("//*[@id=\"credit-accounts-page-filter-option-openAccounts\"]"), "Total Open Accounts");
                 int revolvingBlocks = ExtractBlockCount(driver, By.XPath("//*[@id=\"account-cards-list-revolving-title\"]"), "Revolving Accounts");
                 int installmentBlocks = ExtractBlockCount(driver, By.XPath("//*[@id=\"account-cards-list-installment-title\"]"), "Installment Accounts");
                 int mortgageBlocks = ExtractBlockCount(driver, By.XPath("//*[@id=\"account-cards-list-mortgage-title\"]"), "Mortgage Accounts");
@@ -145,7 +145,8 @@ namespace Equifax.Api.Helper
             try
             {
                 // Locate the Block Text
-                string blockText = driver.FindElement(elementBy).Text;
+                var blockElement = driver.FindElement(elementBy);
+                string blockText = blockElement.GetAttribute("innerText");
                 Console.WriteLine($"{blockType} Text: " + blockText);
 
                 // Use Regex to extract the number inside parentheses

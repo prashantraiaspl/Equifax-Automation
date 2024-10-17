@@ -18,7 +18,7 @@ namespace Equifax.Api.Utilities
             // Path for .CRX File needed for Proxy Setup
             string extensionPath = _configuration["extensionPath"] ?? @"D:\Prashant\Equifax API\Equifax.Api\CRX File\GCKNHKKOOLAABFMLNJONOGAAIFNJLFNP_8_9_0_0.crx";
 
-            // Initialize Chrome options
+            // Initialize Chrome Options
             var chromeOptions = new ChromeOptions();
 
             // Add the FoxyProxy extension to Chrome

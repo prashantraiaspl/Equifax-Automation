@@ -31,7 +31,7 @@ namespace Equifax.Api.Utilities
 
         public async Task<ResponseBody> BrowserAutomationProcess(string url, LoginCredentialRequestDto loginCredentials, DisputeRequestDto disputeRequest)
         {
-            var browserResponse = new ResponseBody();
+            var responseBody = new ResponseBody();
 
             try
             {
@@ -55,16 +55,27 @@ namespace Equifax.Api.Utilities
                 System.Threading.Thread.Sleep(5000);
 
                 // Step 4: File a Dispute
-                await FileDisputeAsync(disputeRequest, driver);
+                string confirmationNumber = await FileDisputeAsync(disputeRequest, driver);
 
                 // Step 5: Close the Browser
                 //CloseBrowser(driver);
+
+                if ( confirmationNumber != null )
+                {
+                    responseBody.status = true;
+                    responseBody.message = "Confirmation Number Generated Successfully.";
+                    responseBody.data = confirmationNumber;
+                }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error during browser interaction: {ex.Message}");
+
+                responseBody.status = false;
+                responseBody.message = ex.Message;
             }
-            return browserResponse;
+
+            return responseBody;
         }
 
         public void OpenBrowserAndNavigate(string url, IWebDriver driver)
@@ -136,9 +147,9 @@ namespace Equifax.Api.Utilities
         {
             try
             {
-                string disputeTabXPath = "//*[@id='fullDisputeLink']";
+                string disputeCenterXPath = "//*[@id='fullDisputeLink']";
 
-                _elementLoader.Load(disputeTabXPath, driver);
+                _elementLoader.Load(disputeCenterXPath, driver);
 
                 Console.WriteLine("Navigated to dispute tab.");
                 System.Threading.Thread.Sleep(3000);
@@ -149,9 +160,10 @@ namespace Equifax.Api.Utilities
             }
         }
 
-        public async Task FileDisputeAsync(DisputeRequestDto disputeRequest, IWebDriver driver)
+        public async Task<string> FileDisputeAsync(DisputeRequestDto disputeRequest, IWebDriver driver)
         {
             List<(IWebElement Element, int Index, string Type)> blockElementsWithIndex = new List<(IWebElement Element, int Index, string Type)>();
+            string? confirmation_number = null;
 
             try
             {
@@ -159,7 +171,6 @@ namespace Equifax.Api.Utilities
                 string open_date = string.Empty;
                 List<string> reasonArr = new List<string>();
                 string comment = string.Empty;
-                string confirmation_number = string.Empty;
 
 
                 foreach (var account in disputeRequest.equifax_data.account)
@@ -182,20 +193,20 @@ namespace Equifax.Api.Utilities
                     }
                 }
 
-                string buttonXPath = "//*[@id=\"file-distupe-section-file-a-dispute-button\"]";
+                string fileDisputeXPath = "//*[@id=\"file-distupe-section-file-a-dispute-button\"]";
                 string checkboxXPath = "//*[@id=\"onlineDeliveryAccept\"]/label/span[1]";
-                string submitButtonXPath = "//*[@id=\"ssn-agree-modal-confirm-button\"]";
+                string continueButtonXPath = "//*[@id=\"ssn-agree-modal-confirm-button\"]";
                 string creditAccountXPath = "//*[@id=\"creditAccounts-section-link\"]/i";
 
 
-                _elementLoader.Load(buttonXPath, driver);
+                _elementLoader.Load(fileDisputeXPath, driver);
                 System.Threading.Thread.Sleep(3000);
 
                 var element = driver.FindElement(By.XPath(checkboxXPath));
                 element.Click();
                 System.Threading.Thread.Sleep(3000);
 
-                _elementLoader.Load(submitButtonXPath, driver);
+                _elementLoader.Load(continueButtonXPath, driver);
                 System.Threading.Thread.Sleep(5000);
 
                 _elementLoader.Load(creditAccountXPath, driver);
@@ -231,7 +242,7 @@ namespace Equifax.Api.Utilities
                 string continueBtnXPath = "//*[@id=\"dispute-nav-buttons-continue-button\"]";
                 string skipUploadXPath = "//*[@id=\"dispute-nav-buttons-skip-button\"]";
                 string submitDisputeXPath = "//*[@id=\"dispute-review-finish-and-upload-button\"]";
-                string confirmationNumberXPath = "//*[@id=\"dispute-confirmation-cards-list-confirmation-number\"]";
+                string confirmationNumberXPath = "//*[@id=\"dispute-confirmation-cards-list-confirmation-number\"]/div";
 
                 System.Threading.Thread.Sleep(3000);
                 IWebElement commentElement = driver.FindElement(By.XPath(commentXPath));
@@ -241,20 +252,26 @@ namespace Equifax.Api.Utilities
                 _elementLoader.Load(saveBtnXPath, driver);
                 _elementLoader.Load(continueBtnXPath, driver);
                 _elementLoader.Load(skipUploadXPath, driver);
-                //_elementLoader.Load(submitDisputeXPath, driver);
+                _elementLoader.Load(submitDisputeXPath, driver);
 
-                System.Threading.Thread.Sleep(5000);
-                string confirmation_number_text = driver.FindElement(By.XPath(confirmationNumberXPath)).Text;
+                System.Threading.Thread.Sleep(15000);
+                var CONFIRMATION_ELEMENT = driver.FindElement(By.XPath(confirmationNumberXPath));
+                confirmation_number = CONFIRMATION_ELEMENT.Text;
 
-                // Storing Confirmation Number
-                System.Threading.Thread.Sleep(3000);
-                confirmation_number = confirmation_number_text;
+                if (confirmation_number == null)
+                {
+                    CONFIRMATION_ELEMENT = driver.FindElement(By.XPath("//*[@id=\"dispute-confirmation-cards-list-confirmation-number\"]/div"));
+                    confirmation_number = CONFIRMATION_ELEMENT.Text;
+                }
+
                 Console.WriteLine($"confirmation_number: {confirmation_number}");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Filing Dispute Error: {ex.Message}");
             }
+
+            return confirmation_number;
         }
 
         public void CloseBrowser(IWebDriver driver)

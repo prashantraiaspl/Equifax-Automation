@@ -2,8 +2,8 @@
 {
     public enum RequestStatus
     {
-        InProgress,
-        Cancelled,
-        Completed
+        InProgress, // = 0
+        Cancelled,  // = 1
+        Completed   // = 2
     }
 }
