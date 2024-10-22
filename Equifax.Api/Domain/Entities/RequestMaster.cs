@@ -14,5 +14,6 @@ namespace Equifax.Api.Domain.Models
         public string? open_date { get; set; }
         public RequestStatus request_status { get; set; }
         public string? confirmation_number { get; set; }
+        public int? credit_repair_id { get; set; }
     }
 }

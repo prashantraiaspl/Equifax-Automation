@@ -55,84 +55,14 @@ namespace Equifax.Api.Controllers
 
                 if (requestData.data == null)
                 {
-                    // Generating New Request ID in Database
-                    var generatedRequest = await _requestRepository.InsertRequest(requestDto);
-
-                    // NEW Request Generated
-                    _logger.LogInformation("New Request Generated and Inserted in DB");
-
-                    // Log before performing browser automation
-                    _logger.LogInformation("Starting browser automation for URL: {scrappingUrl}", _scrappingUrl);
-
-                    // Login Request Sent to Chrome Driver.
-                    ResponseBody result = await _browserUtility.BrowserAutomationProcess(_scrappingUrl, loginCredentials, requestDto);
-
-                    if(result.data is not null)
-                    {
-                        var response = new RequestMaster
-                        {
-                            request_status = RequestStatus.Completed,
-                            creditor_name = requestDto.equifax_data.account[0].creditor_name,
-                            open_date = requestDto.equifax_data.account[0].open_date,
-                            confirmation_number = result?.data?.confirmation_number,
-                        };
-
-                        if (response.confirmation_number != null)
-                        {
-                            await _requestRepository.UpdateRequest(response);
-                        }
-                    }
+                    // Handle new request
+                    return await HandleNewRequestAsync(requestDto, loginCredentials);
                 }
                 else
                 {
-                    foreach (var request in requestData.data)
-                    {
-                        if (request.request_status == RequestStatus.Completed)
-                        {
-                            return Ok(new ResponseBody
-                            {
-                                status = true,
-                                message = $"Request ID: {request.RequestId} has Already been Completed.",
-                                data = request
-                            });
-                        }
-                        else if (request.request_status == RequestStatus.Cancelled)
-                        {
-                            return Ok(new ResponseBody
-                            {
-                                status = true,
-                                message = $"Request ID: {request.RequestId} has been Cancelled.",
-                                data = request
-                            });
-                        }
-
-                        //continue last request
-                        else
-                        {
-                            // Login Request Sent to Chrome Driver.
-                            var result = await _browserUtility.BrowserAutomationProcess(_scrappingUrl, loginCredentials, requestDto);
-
-                            if (result.data)
-                            {
-                                var response = new RequestMaster
-                                {
-                                    request_status = RequestStatus.Completed,
-                                    creditor_name = requestDto.equifax_data.account[0].creditor_name,
-                                    open_date = requestDto.equifax_data.account[0].open_date,
-                                    confirmation_number = result?.data?.confirmation_number,
-                                };
-
-                                if (response.confirmation_number != null)
-                                {
-                                    await _requestRepository.UpdateRequest(response);
-                                }
-                            }
-                        }
-                    }
+                    // Handle existing request
+                    return await HandleExistingRequestAsync(requestData.data, requestDto, loginCredentials);
                 }
-
-
-                return Ok(requestDto);
             }
             catch (Exception ex)
             {
@@ -145,5 +75,115 @@ namespace Equifax.Api.Controllers
                 });
             }
         }
+
+
+        private async Task<IActionResult> HandleNewRequestAsync(DisputeRequestDto requestDto, LoginCredentialRequestDto loginCredentials)
+        {
+            // Generate new request in DB
+            await _requestRepository.InsertRequest(requestDto);
+
+            _logger.LogInformation("New Request Generated and Inserted in DB");
+
+            return await ProcessRequestWithBrowserAutomationAsync(requestDto, loginCredentials);
+        }
+
+
+        private async Task<IActionResult> HandleExistingRequestAsync(IEnumerable<RequestMaster> requestData, DisputeRequestDto requestDto, LoginCredentialRequestDto loginCredentials)
+        {
+            foreach (var request in requestData)
+            {
+                if (request.request_status == RequestStatus.Completed)
+                {
+                    return Ok(BuildResponseBody(request, "Request has Already been Completed."));
+                }
+                else if (request.request_status == RequestStatus.Cancelled)
+                {
+                    return Ok(BuildResponseBody(request, "Request has been Cancelled."));
+                }
+            }
+
+            // Continue last request if not completed or cancelled
+            return await ProcessRequestWithBrowserAutomationAsync(requestDto, loginCredentials);
+        }
+
+
+        private async Task<IActionResult> ProcessRequestWithBrowserAutomationAsync(DisputeRequestDto requestDto, LoginCredentialRequestDto loginCredentials)
+        {
+            // Log and start browser automation
+            _logger.LogInformation($"Starting Browser Automation for URL: {_scrappingUrl}");
+
+            string confirmationNumber = await _browserUtility.BrowserAutomationProcess(_scrappingUrl, loginCredentials, requestDto);
+
+            if (!string.IsNullOrEmpty(confirmationNumber))
+            {
+                List<RequestMaster> updatedRequests = new List<RequestMaster>();
+
+                foreach (var account in requestDto.equifax_data.account)
+                {
+                    var response = new RequestMaster
+                    {
+                        RequestId = 0,
+                        user_name = requestDto.user_name,
+                        user_password = requestDto.user_password,
+                        client_id = requestDto.client_id,
+                        request_status = RequestStatus.Completed,
+                        creditor_name = account.creditor_name,
+                        open_date = account.open_date,
+                        confirmation_number = confirmationNumber,
+                        credit_repair_id = account.credit_repair_id,
+                    };
+
+                    // Update request with confirmation number
+                    var updateResult = await _requestRepository.UpdateRequest(response);
+
+
+                    if (updateResult.status)
+                    {
+                        account.confirmation_number = response.confirmation_number;
+                        updatedRequests.Add(response);
+                    }
+                }
+
+                if (updatedRequests.Count != 0)
+                {
+                    // Build the response using your BuildResponseBody-like logic
+                    var responseBody = new ResponseBody
+                    {
+                        status = true,
+                        message = "Request processed successfully.",
+                        data = updatedRequests
+                    };
+
+                    return Ok(responseBody);
+                }
+                else
+                {
+                    return StatusCode(StatusCodes.Status500InternalServerError, new ResponseBody
+                    {
+                        status = false,
+                        message = "Failed to update the requests."
+                    });
+                }
+            }
+
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseBody
+            {
+                status = false,
+                message = "Failed to get confirmation number."
+            });
+        }
+
+
+        private ResponseBody BuildResponseBody(RequestMaster request, string message)
+        {
+            return new ResponseBody
+            {
+                status = true,
+                message = $"{message} Request ID: {request.RequestId}",
+                data = request
+            };
+        }
+
+
     }
 }

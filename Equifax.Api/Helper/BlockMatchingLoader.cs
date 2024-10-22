@@ -2,11 +2,11 @@
 
 namespace Equifax.Api.Helper
 {
-    public class MatchedBlock
+    public class BlockMatchingLoader
     {
         private readonly ElementLoader _elementLoader;
         private readonly BlocksLoader _blockLoader;
-        public MatchedBlock
+        public BlockMatchingLoader
             (
                 ElementLoader elementLoader,
                 BlocksLoader blocksLoader
@@ -112,6 +112,11 @@ namespace Equifax.Api.Helper
 
                                 matchedBlock = block;
                                 break;
+                            }
+                            else
+                            {
+                                // Next Block Iteration.
+                                continue;
                             }
                         }
                     }

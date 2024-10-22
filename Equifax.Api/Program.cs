@@ -30,12 +30,19 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Registering the Utility & Helper Classes.
 builder.Services.AddScoped<IRequestRepository, RequestRepository>();
+
+builder.Services.AddScoped<BrowserUtility>();
 builder.Services.AddScoped<DriverSetupManager>();
-builder.Services.AddScoped<CheckboxLoader>();
-builder.Services.AddScoped<MatchedBlock>();
+builder.Services.AddScoped<SleepLoader>();
 builder.Services.AddScoped<ElementLoader>();
 builder.Services.AddScoped<BlocksLoader>();
-builder.Services.AddScoped<BrowserUtility>();
+builder.Services.AddScoped<BlockMatchingLoader>();
+builder.Services.AddScoped<CheckboxLoader>();
+builder.Services.AddScoped<OpenBrowserAndNavigateUtility>();
+builder.Services.AddScoped<LoginUtility>();
+builder.Services.AddScoped<NavigateToDisputeUtility>();
+builder.Services.AddScoped<FileDisputeUtility>();
+builder.Services.AddScoped<CloseBrowserUtility>();
 
 
 builder.Services.AddEndpointsApiExplorer();
