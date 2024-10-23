@@ -6,10 +6,12 @@ namespace Equifax.Api.Utilities
     public class NavigateToDisputeUtility
     {
         private readonly ElementLoader _elementLoader;
+        private readonly SleepLoader _sleepLoader;
 
-        public NavigateToDisputeUtility(ElementLoader elementLoader)
+        public NavigateToDisputeUtility(ElementLoader elementLoader, SleepLoader sleepLoader)
         {
             _elementLoader = elementLoader;
+            _sleepLoader = sleepLoader;
         }
 
 
@@ -22,7 +24,7 @@ namespace Equifax.Api.Utilities
                 _elementLoader.Load(disputeCenterXPath, driver);
 
                 Console.WriteLine("Navigated to dispute tab.");
-                System.Threading.Thread.Sleep(3000);
+                _sleepLoader.Seconds(3);
             }
             catch (Exception ex)
             {

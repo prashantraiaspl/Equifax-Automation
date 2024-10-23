@@ -10,26 +10,31 @@ namespace Equifax.Api.Utilities
         private readonly BlocksLoader _blockLoader;
         private readonly BlockMatchingLoader _blockMatchingLoader;
         private readonly CheckboxLoader _checkboxLoader;
+        private readonly SleepLoader _sleepLoader;
 
         public FileDisputeUtility
             (
                 ElementLoader elementLoader, 
                 BlocksLoader blocksLoader,
                 BlockMatchingLoader blockMatchingLoader,
-                CheckboxLoader checkboxLoader
+                CheckboxLoader checkboxLoader,
+                SleepLoader sleepLoader
             )
         {
             _elementLoader = elementLoader;
             _blockLoader = blocksLoader;
             _blockMatchingLoader = blockMatchingLoader;
             _checkboxLoader = checkboxLoader;
+            _sleepLoader = sleepLoader;
         }
 
 
         public async Task<string> FileDisputeAsync(DisputeRequestDto disputeRequest, IWebDriver driver)
         {
             List<(IWebElement Element, int Index, string Type)> blockElementsWithIndex = new List<(IWebElement Element, int Index, string Type)>();
-            string? confirmation_number = null;
+
+            // CONFIRMATION NUMBER
+            string confirmation_number = "";
 
             try
             {
@@ -38,7 +43,7 @@ namespace Equifax.Api.Utilities
                 List<string> reasonArr = new List<string>();
                 string comment = string.Empty;
 
-
+                // Iterating Account Data from Payload.
                 foreach (var account in disputeRequest.equifax_data.account)
                 {
                     if (account.creditor_name != null)
@@ -59,6 +64,7 @@ namespace Equifax.Api.Utilities
                     }
                 }
 
+                // Declaring Elements XPath
                 string fileDisputeXPath = "//*[@id=\"file-distupe-section-file-a-dispute-button\"]";
                 string checkboxXPath = "//*[@id=\"onlineDeliveryAccept\"]/label/span[1]";
                 string continueButtonXPath = "//*[@id=\"ssn-agree-modal-confirm-button\"]";
@@ -66,17 +72,17 @@ namespace Equifax.Api.Utilities
 
 
                 _elementLoader.Load(fileDisputeXPath, driver);
-                System.Threading.Thread.Sleep(3000);
+                _sleepLoader.Seconds(3);
 
                 var element = driver.FindElement(By.XPath(checkboxXPath));
                 element.Click();
-                System.Threading.Thread.Sleep(3000);
+                _sleepLoader.Seconds(3);
 
                 _elementLoader.Load(continueButtonXPath, driver);
-                System.Threading.Thread.Sleep(5000);
+                _sleepLoader.Seconds(5);
 
                 _elementLoader.Load(creditAccountXPath, driver);
-                System.Threading.Thread.Sleep(3000);
+                _sleepLoader.Seconds(3);
 
 
                 // Block Loader
@@ -110,7 +116,7 @@ namespace Equifax.Api.Utilities
                 string submitDisputeXPath = "//*[@id=\"dispute-review-finish-and-upload-button\"]";
                 string confirmationNumberXPath = "//*[@id=\"dispute-confirmation-cards-list-confirmation-number\"]/div";
 
-                System.Threading.Thread.Sleep(3000);
+                _sleepLoader.Seconds(3);
                 IWebElement commentElement = driver.FindElement(By.XPath(commentXPath));
                 commentElement.Clear();
                 commentElement.SendKeys(comment);
@@ -120,7 +126,7 @@ namespace Equifax.Api.Utilities
                 _elementLoader.Load(skipUploadXPath, driver);
                 _elementLoader.Load(submitDisputeXPath, driver);
 
-                System.Threading.Thread.Sleep(15000);
+                _sleepLoader.Seconds(15);
                 var CONFIRMATION_ELEMENT = driver.FindElement(By.XPath(confirmationNumberXPath));
                 confirmation_number = CONFIRMATION_ELEMENT.Text;
 

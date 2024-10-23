@@ -1,10 +1,19 @@
 ﻿using Equifax.Api.Domain.DTOs;
+using Equifax.Api.Helper;
 using OpenQA.Selenium;
 
 namespace Equifax.Api.Utilities
 {
     public class LoginUtility
     {
+        private readonly SleepLoader _sleepLoader;
+
+        public LoginUtility(SleepLoader sleepLoader)
+        {
+            _sleepLoader = sleepLoader;
+        }
+
+
         public void Login(LoginCredentialRequestDto request, IWebDriver driver)
         {
             try
@@ -21,7 +30,7 @@ namespace Equifax.Api.Utilities
 
 
                 Console.WriteLine("Login successful.");
-                System.Threading.Thread.Sleep(3000);
+                _sleepLoader.Seconds(3);
 
                 // Check if the subscription page is shown (span with price $19.95)
                 try
@@ -33,7 +42,7 @@ namespace Equifax.Api.Utilities
                         declineButton.Click();
 
                         Console.WriteLine("Subscription prompt bypassed.");
-                        System.Threading.Thread.Sleep(3000);
+                        _sleepLoader.Seconds(3);
 
                         // After clicking, navigate to the dashboard
                         driver.Navigate().GoToUrl("https://my.equifax.com/membercenter/#/dashboard");

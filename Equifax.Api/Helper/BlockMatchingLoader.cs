@@ -6,14 +6,18 @@ namespace Equifax.Api.Helper
     {
         private readonly ElementLoader _elementLoader;
         private readonly BlocksLoader _blockLoader;
+        private readonly SleepLoader _sleepLoader;
+
         public BlockMatchingLoader
             (
                 ElementLoader elementLoader,
-                BlocksLoader blocksLoader
+                BlocksLoader blocksLoader,
+                SleepLoader sleepLoader
             )
         {
             _elementLoader = elementLoader;
             _blockLoader = blocksLoader;
+            _sleepLoader = sleepLoader;
         }
 
 
@@ -99,12 +103,13 @@ namespace Equifax.Api.Helper
                             // Compare open dates
                             if (string.Equals(openDateText.Trim(), open_date.Trim(), StringComparison.InvariantCulture))
                             {
-                                System.Threading.Thread.Sleep(3000);
+                                _sleepLoader.Seconds(3);
                                 var backbtn = driver.FindElement(By.Id("account-back-button"));
+
                                 backbtn.Click();
                                 Console.WriteLine("-----BACK BUTTON Clicked.-----");
 
-                                System.Threading.Thread.Sleep(5000);
+                                _sleepLoader.Seconds(5);
                                 blockElementsWithIndex = await _blockLoader.Process(driver);
 
                                 // Get the block again after coming back
@@ -129,6 +134,8 @@ namespace Equifax.Api.Helper
                 Console.WriteLine($"Block Index: {index}, Block Element: {block}");
             }
 
+
+            // IF Block FOUND - Balle Balle 👌
             if (matchedBlock != null)
             {
                 string FileADisputeButtonXPath = "//*[@id=\"credit-account-details-page-dispute-information-btn\"]";

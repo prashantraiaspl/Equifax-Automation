@@ -77,6 +77,7 @@ namespace Equifax.Api.Controllers
         }
 
 
+        //---------------------------HELPER FUNCTIONS------------------------------//
         private async Task<IActionResult> HandleNewRequestAsync(DisputeRequestDto requestDto, LoginCredentialRequestDto loginCredentials)
         {
             // Generate new request in DB

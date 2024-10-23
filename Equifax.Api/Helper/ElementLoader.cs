@@ -4,6 +4,14 @@ namespace Equifax.Api.Helper
 {
     public class ElementLoader
     {
+        private readonly SleepLoader _sleepLoader;
+
+        public ElementLoader(SleepLoader sleepLoader)
+        {
+            _sleepLoader = sleepLoader;
+        }
+
+
         public void Load(string xPath, IWebDriver driver)
         {
 			try
@@ -17,9 +25,10 @@ namespace Equifax.Api.Helper
                 }
                 else
                 {
-                    System.Threading.Thread.Sleep(10000);
+                    _sleepLoader.Seconds(10);
                     var element = driver.FindElement(By.XPath(xPath));
-                    System.Threading.Thread.Sleep(10000);
+                    _sleepLoader.Seconds(10);
+
                     element.Click();
                     Console.WriteLine("------ELement is Clicked (else).------");
                 }

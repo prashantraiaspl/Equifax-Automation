@@ -5,6 +5,14 @@ namespace Equifax.Api.Helper
 {
     public class BlocksLoader
     {
+        private readonly SleepLoader _sleepLoader;
+
+        public BlocksLoader(SleepLoader sleepLoader)
+        {
+            _sleepLoader = sleepLoader;
+        }
+
+
         public async Task<List<(IWebElement, int Index, string Type)>> Process(IWebDriver driver)
         {
             List<(IWebElement Element, int Index, string Type)> blockElementsWithIndex = new List<(IWebElement Element, int Index, string Type)>();
@@ -136,9 +144,11 @@ namespace Equifax.Api.Helper
             return await Task.FromResult(blockElementsWithIndex);
         }
 
+
+        //-------------------HELPER FUNCTION--------------------//
         private int ExtractBlockCount(IWebDriver driver, By elementBy, string blockType)
         {
-            System.Threading.Thread.Sleep(5000);
+            _sleepLoader.Seconds(5);
 
             int blockCount = 0;
 

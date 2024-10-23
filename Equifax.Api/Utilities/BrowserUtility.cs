@@ -43,27 +43,28 @@ namespace Equifax.Api.Utilities
             {
                 IWebDriver? driver = null;
 
+                //-------------INITIALIZATION OF CHROME DRIVER-------------//
                 driver = _driverSetupManager.InitializeDriver();
 
                 _sleepLoader.Seconds(3);
 
-                // Step 1: Open URL
+                //-------------Step 1: Open URL-------------//
                 _openBrowserAndNavigateUtility.OpenBrowserAndNavigate(url, driver);
 
-                // Step 2: Perform Login
+                //-------------Step 2: Perform Login-------------//
                 _loginUtility.Login(loginCredentials, driver);
 
                 _sleepLoader.Seconds(5);
 
-                // Step 3: Navigate to Dispute
+                //-------------Step 3: Navigate to Dispute-------------//
                 _navigateToDisputeUtility.NavigateToDispute(driver);
 
                 _sleepLoader.Seconds(5);
 
-                // Step 4: File a Dispute
+                //-------------Step 4: File a Dispute-------------//
                 confirmationNumber = await _fileDisputeUtility.FileDisputeAsync(disputeRequest, driver);
 
-                // Step 5: Close the Browser
+                //-------------Step 5: Close the Browser-------------//
                 //_closeBrowserUtility.CloseBrowser(driver);
             }
             catch (Exception ex)
