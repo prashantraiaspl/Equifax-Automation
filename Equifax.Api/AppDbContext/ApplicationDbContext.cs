@@ -1,7 +1,7 @@
 ﻿using Equifax.Api.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace Equifax.Api.Data
+namespace Equifax.Api.AppDbContext
 {
     public class ApplicationDbContext : DbContext
     {

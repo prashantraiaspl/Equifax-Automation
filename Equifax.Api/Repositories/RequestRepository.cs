@@ -1,4 +1,4 @@
-﻿using Equifax.Api.Data;
+﻿using Equifax.Api.AppDbContext;
 using Equifax.Api.Domain.DTOs;
 using Equifax.Api.Domain.Enums;
 using Equifax.Api.Domain.Models;

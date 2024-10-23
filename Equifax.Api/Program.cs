@@ -1,4 +1,4 @@
-using Equifax.Api.Data;
+using Equifax.Api.AppDbContext;
 using Equifax.Api.Helper;
 using Equifax.Api.Interfaces;
 using Equifax.Api.Mappings;
